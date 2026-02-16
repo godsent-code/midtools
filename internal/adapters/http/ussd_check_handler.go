@@ -5,23 +5,23 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/godsent-code/midtools/internal/application/sticker"
+	"github.com/godsent-code/midtools/internal/application/ussd_check"
 	"github.com/godsent-code/midtools/pkg"
 )
 
-type StickerHandler struct {
-	service sticker.StickerService
+type USSDCheckHandler struct {
+	service ussd_check.USSDCheckService
 }
 
-func (ach *StickerHandler) GetSticker(w http.ResponseWriter, r *http.Request) {
-	var request StickerRequest
+func (usd *USSDCheckHandler) GetUSSDCheck(w http.ResponseWriter, r *http.Request) {
+	var request USSDCheckRequest
 
 	if err := json.NewDecoder(io.LimitReader(r.Body, 1048576)).Decode(&request); err != nil {
 		pkg.WriteResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	br := sticker.StickerInput{
+	br := ussd_check.USSDCheckInput{
 		Cars: request.Cars,
 	}
 
@@ -30,7 +30,7 @@ func (ach *StickerHandler) GetSticker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := ach.service.GetSticker(r.Context(), br)
+	results, err := usd.service.GetUSSDCheck(r.Context(), br)
 	if err != nil {
 		pkg.WriteResponse(w, http.StatusInternalServerError, err.Error())
 		return
@@ -38,6 +38,6 @@ func (ach *StickerHandler) GetSticker(w http.ResponseWriter, r *http.Request) {
 	pkg.WriteResponse(w, http.StatusOK, results)
 }
 
-func NewStickerHandler(service sticker.StickerService) *StickerHandler {
-	return &StickerHandler{service: service}
+func NewUSSDCheckHandler(service ussd_check.USSDCheckService) *USSDCheckHandler {
+	return &USSDCheckHandler{service: service}
 }

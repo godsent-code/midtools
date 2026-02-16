@@ -6,6 +6,7 @@ type Config struct {
 	DbSource    string `mapstructure:"DB_SOURCE"`
 	ApiKey      string `mapstructure:"API_KEY"`
 	ApiEndPoint string `mapstructure:"API_ENDPOINT"`
+	DBSource    string `mapstructure:"DB_SOURCE"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

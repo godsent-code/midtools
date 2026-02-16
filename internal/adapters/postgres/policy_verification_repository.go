@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -15,23 +15,21 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type StickerRepository struct {
+type PolicyVerificationRepository struct {
 	config configs.Config
 }
 
-type nicStickerResponse struct {
+type nicPolicyVerificationResponse struct {
 	Success bool `json:"success"`
-
-	Data struct {
-		StickerLink   string `json:"stickerLink"`
-		StickerNumber string `json:"stickerNumber"`
+	Data    struct {
+		ProductName string `json:"productName"`
+		StartDate   string `json:"startDate"`
+		EndDate     string `json:"endDate"`
 	} `json:"data"`
-
-	Message string `json:"message"`
 }
 
-func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]domain.Sticker, error) {
-	results := make([]domain.Sticker, 0, len(cars))
+func (r *PolicyVerificationRepository) GetPolicyVerification(ctx context.Context, cars []string) ([]domain.PolicyVerification, error) {
+	results := make([]domain.PolicyVerification, 0, len(cars))
 	var mu sync.Mutex
 
 	workerCount := 5
@@ -57,13 +55,13 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 					return
 				}
 
-				result := domain.Sticker{
+				result := domain.PolicyVerification{
 					RegistrationNumber: car,
 				}
 
 				payload := map[string]interface{}{
 					"data": map[string]string{
-						"registrationNumber": car,
+						"registrationNumber": strings.TrimSpace(car),
 					},
 				}
 
@@ -78,7 +76,7 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 				req, err := http.NewRequestWithContext(
 					ctx,
 					http.MethodPost,
-					r.config.ApiEndPoint+"/public-api/generate-browncard",
+					r.config.ApiEndPoint+"/public-api/policy-verification",
 					bytes.NewBuffer(jsonData),
 				)
 				if err != nil {
@@ -102,7 +100,7 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 				bodyBytes, _ := io.ReadAll(resp.Body)
 				resp.Body.Close()
 
-				var nicResp nicStickerResponse
+				var nicResp nicPolicyVerificationResponse
 				if err := json.Unmarshal(bodyBytes, &nicResp); err != nil {
 					result.Success = false
 					result.Message = "Invalid response from NIC"
@@ -113,12 +111,13 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 				// Success case
 				if nicResp.Success {
 					result.Success = true
-					result.StickerNumber = nicResp.Data.StickerNumber
-					result.StickerLink = nicResp.Data.StickerLink
-					result.Message = "Sticker generated and assigned to policy successfully."
+					result.ProductName = nicResp.Data.ProductName
+					result.StartDate = nicResp.Data.StartDate
+					result.EndDate = nicResp.Data.EndDate
+					result.Message = "policy generated successfully."
 				} else {
 					result.Success = false
-					result.Message = nicResp.Message
+					result.Message = "Failed to generate Policy"
 				}
 
 				r.appendResult(&mu, &results, result)
@@ -132,16 +131,15 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 	close(jobs)
 
 	wg.Wait()
-	fmt.Println(results)
 	return results, nil
 }
 
-func (r *StickerRepository) appendResult(mu *sync.Mutex, results *[]domain.Sticker, result domain.Sticker) {
+func (r *PolicyVerificationRepository) appendResult(mu *sync.Mutex, results *[]domain.PolicyVerification, result domain.PolicyVerification) {
 	mu.Lock()
 	*results = append(*results, result)
 	mu.Unlock()
 }
 
-func NewStickerRepository(config configs.Config) *StickerRepository {
-	return &StickerRepository{config: config}
+func NewPolicyVerificationRepository(config configs.Config) *PolicyVerificationRepository {
+	return &PolicyVerificationRepository{config: config}
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"sync"
@@ -15,23 +14,19 @@ import (
 	"golang.org/x/time/rate"
 )
 
-type StickerRepository struct {
+type USSDCheckRepository struct {
 	config configs.Config
 }
 
-type nicStickerResponse struct {
-	Success bool `json:"success"`
-
-	Data struct {
-		StickerLink   string `json:"stickerLink"`
-		StickerNumber string `json:"stickerNumber"`
-	} `json:"data"`
-
-	Message string `json:"message"`
+type nicUSSDCheckResponse struct {
+	USERID  string `json:"USERID"`
+	MSISDN  string `json:"MSISDN"`
+	MSG     string `json:"MSG"`
+	MSGTYPE bool   `json:"MSGTYPE"`
 }
 
-func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]domain.Sticker, error) {
-	results := make([]domain.Sticker, 0, len(cars))
+func (r *USSDCheckRepository) GetUSSDCheck(ctx context.Context, cars []string) ([]domain.USSDChecker, error) {
+	results := make([]domain.USSDChecker, 0, len(cars))
 	var mu sync.Mutex
 
 	workerCount := 5
@@ -57,14 +52,16 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 					return
 				}
 
-				result := domain.Sticker{
+				result := domain.USSDChecker{
 					RegistrationNumber: car,
 				}
 
 				payload := map[string]interface{}{
-					"data": map[string]string{
-						"registrationNumber": car,
-					},
+					"registrationNumber": car,
+					"USERID":             "1",
+					"MSISDN":             "8",
+					"MSGTYPE":            false,
+					"USERDATA":           car,
 				}
 
 				jsonData, err := json.Marshal(payload)
@@ -78,7 +75,7 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 				req, err := http.NewRequestWithContext(
 					ctx,
 					http.MethodPost,
-					r.config.ApiEndPoint+"/public-api/generate-browncard",
+					r.config.ApiEndPoint+"/public-api/vehicle-insurance-ussd-check",
 					bytes.NewBuffer(jsonData),
 				)
 				if err != nil {
@@ -102,7 +99,7 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 				bodyBytes, _ := io.ReadAll(resp.Body)
 				resp.Body.Close()
 
-				var nicResp nicStickerResponse
+				var nicResp nicUSSDCheckResponse
 				if err := json.Unmarshal(bodyBytes, &nicResp); err != nil {
 					result.Success = false
 					result.Message = "Invalid response from NIC"
@@ -111,14 +108,11 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 				}
 
 				// Success case
-				if nicResp.Success {
+				if nicResp.MSG != "" {
 					result.Success = true
-					result.StickerNumber = nicResp.Data.StickerNumber
-					result.StickerLink = nicResp.Data.StickerLink
-					result.Message = "Sticker generated and assigned to policy successfully."
+					result.Message = nicResp.MSG
 				} else {
 					result.Success = false
-					result.Message = nicResp.Message
 				}
 
 				r.appendResult(&mu, &results, result)
@@ -132,16 +126,15 @@ func (r *StickerRepository) GetStickers(ctx context.Context, cars []string) ([]d
 	close(jobs)
 
 	wg.Wait()
-	fmt.Println(results)
 	return results, nil
 }
 
-func (r *StickerRepository) appendResult(mu *sync.Mutex, results *[]domain.Sticker, result domain.Sticker) {
+func (r *USSDCheckRepository) appendResult(mu *sync.Mutex, results *[]domain.USSDChecker, result domain.USSDChecker) {
 	mu.Lock()
 	*results = append(*results, result)
 	mu.Unlock()
 }
 
-func NewStickerRepository(config configs.Config) *StickerRepository {
-	return &StickerRepository{config: config}
+func NewUSSDCheckerRepository(config configs.Config) *USSDCheckRepository {
+	return &USSDCheckRepository{config: config}
 }
