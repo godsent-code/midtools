@@ -1,0 +1,138 @@
+{
+  "info": {
+    "name": "Midtools API",
+    "description": "API collection for the Midtools service - vehicle brown card, sticker, USSD check, policy verification, products, and risk types.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    }
+  ],
+  "item": [
+    {
+      "name": "Vehicle Services",
+      "item": [
+        {
+          "name": "Get Brown Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cars\": \"GR1234-22, GR5678AD\"\n}"
+            },
+            "url": "{{baseUrl}}/browncard",
+            "description": "Retrieve brown card information for one or more vehicles. The cars field accepts comma, newline, or tab-separated Ghana license plate numbers."
+          }
+        },
+        {
+          "name": "Get Sticker",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cars\": \"GR1234-22, GR5678AD\"\n}"
+            },
+            "url": "{{baseUrl}}/sticker",
+            "description": "Retrieve sticker information for one or more vehicles. The cars field accepts comma, newline, or tab-separated Ghana license plate numbers."
+          }
+        },
+        {
+          "name": "USSD Check",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cars\": \"GR1234-22, GR5678AD\"\n}"
+            },
+            "url": "{{baseUrl}}/ussd_check",
+            "description": "Perform USSD check for one or more vehicles. The cars field accepts comma, newline, or tab-separated Ghana license plate numbers."
+          }
+        },
+        {
+          "name": "Policy Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cars\": \"GR1234-22, GR5678AD\"\n}"
+            },
+            "url": "{{baseUrl}}/policy_verification",
+            "description": "Verify policy status for one or more vehicles. The cars field accepts comma, newline, or tab-separated Ghana license plate numbers."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Products",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/products",
+            "description": "Seed or create products from the external NIC API. No request body required."
+          }
+        },
+        {
+          "name": "Get Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/products",
+            "description": "List all products stored in the database."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Risk Types",
+      "item": [
+        {
+          "name": "Create Risk Type",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/risk_type",
+            "description": "Seed or create risk types from the external NIC API. No request body required."
+          }
+        },
+        {
+          "name": "Get Risk Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/risk_type",
+            "description": "List all risk types stored in the database."
+          }
+        }
+      ]
+    }
+  ]
+}
